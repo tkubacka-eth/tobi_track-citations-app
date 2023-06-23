@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 import requests as requests
 import streamlit as st
-import matplotlib.pyplot as plt
 import time
 import json as json
 
