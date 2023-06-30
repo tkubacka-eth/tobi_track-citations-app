@@ -144,7 +144,7 @@ def plot_rel_count_plotly(df, databases, count):
     #    boxmode='group')
     fig.update_traces(orientation='h')
     fig.update_layout(yaxis_range=[min(all_d['database_id'])-manual_jitter-0.1, max(all_d['database_id'])+manual_jitter+0.1])
-    fig.update_yaxes(tickmode="array", tickvals=list(range(len(databases))), ticktext=databases)
+    fig.update_yaxes(tickmode="array", tickvals=list(reversed(range(len(databases)))), ticktext=databases)
     fig.update_xaxes(
         title=dict(text="count relative to median")
     )
