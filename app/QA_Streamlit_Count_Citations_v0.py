@@ -100,20 +100,21 @@ def generate_docs():
     st.write('The *Citations count* corresponds to the *cited_by_count* field.')
     st.write('The *References count* is computed by getting the length of the *referenced_work* field.')
     st.write('The *Authors count* is computed by getting the length of the *authorships* field.')
-    st.subheader('Opencitations COCI')
+    st.subheader('OpenCitations COCI')
     st.write('The *citations count*, *references count* and *authors count* are first retrieved using metadata:\
-    https://opencitations.net/index/coci/api/v1/metadata/<doi__doi__doi... doi>.')
-    st.write('Note: this operation strictly depends on external services (i.e. doi.org and associate applications) \
+    [https://opencitations.net/index/coci/api/v1/metadata/<DOI__DOI__DOI... DOI>](https://opencitations.net/index/coci/api/v1/metadata/)')
+    st.write('Note from [OpenCitations](https://opencitations.net/index/croci/api/v1): "This operation strictly depends on external services (i.e. doi.org and associate applications) \
     for gathering all the metadata of the articles requested. \
-    In fact, these metadata are not stored in COCI and are retrieved dynamically upon request.')
+    In fact, these metadata are not stored in COCI and are retrieved dynamically upon request."')
     st.write('The *Citations count* corresponds to the *citation_count* field.')
-    st.write('The *References count* is computed by adding 1 to the number of ";" in the *reference* field.')
-    st.write('The *Authors count* is computed by adding 1 to the number of ";" in the *author* field.')
-    st.write('In a second step, *citations count* and *references count* of DOIs that are not associated to metadata \
+    st.write('The *References count* is computed by adding 1 to the number of semicolons (";") in the *reference* field.')
+    st.write('The *Authors count* is computed by adding 1 to the number of semicolons (";") in the *author* field.')
+    st.write('In a second step, *citations count* and *references count* of DOIs which are not associated to metadata \
     are retrieved using: \
-    https://opencitations.net/index/coci/api/v1/citation-count/<doi> and \
-    https://opencitations.net/index/coci/api/v1/reference-count/<doi>. \
-    This methods returns 0 by default. 0s of this step are replaced by *None*.')
+    [https://opencitations.net/index/coci/api/v1/citation-count/<doi>](https://opencitations.net/index/coci/api/v1/citation-count/) and \
+    [https://opencitations.net/index/coci/api/v1/reference-count/<doi>](https://opencitations.net/index/coci/api/v1/reference-count/). \
+    This method returns 0 by default. 0s retrieved during this step are replaced by *None*,\
+    whereas other 0s are kept as they are.')
     st.subheader('Semantic Scholar')
     st.write('The *Citations count* corresponds to the *citationCount* field.')
     st.write('The *References count* corresponds to the *referenceCount* field.')
@@ -122,7 +123,6 @@ def generate_docs():
 
 def csv_download_button():
     st.download_button("Click to Download data (csv)", csv, "counts.csv")
-
 
 df_swissuniversities_members = pd.DataFrame([
     ['École Polytechnique Fédérale de Lausanne', 'https://openalex.org/I5124864'],
@@ -279,7 +279,7 @@ st.title('Track your open scholarly metadata')
 #     st.download_button("Download data (csv)", csv, "counts.csv")
 
 st.write('''Wondering how your research is being represented in open bibliometric data sources? '''
-         '''Enter your DOIs in the sidebar and select some open datasets for an easy comparison. '''
+         '''Enter your DOIs in the sidebar and select some open data sources for an easy comparison. '''
          '''Alternatively, pick an institution from the list and '''
          '''inspect a random sample of 10 DOIs affiliated with it.''')
 
@@ -311,8 +311,7 @@ df_pivoted['CV'] = df_pivoted['sd']/df_pivoted['mean']
 tab_dict = {
     "Citations count": lambda x: generate_tab(df_pivoted, 'citations'), 
     "References count": lambda x: generate_tab(df_pivoted, 'references'),
-    "Authors count": lambda x: generate_tab(df_pivoted, 'authors'), 
-    "Affiliations count": lambda x: st.warning('This feature is not available yet.'), 
+    "Authors count": lambda x: generate_tab(df_pivoted, 'authors'),
     "Documentation": lambda x: generate_docs(), 
     "Download data": lambda x: csv_download_button(),
 }
