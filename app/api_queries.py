@@ -10,7 +10,7 @@ import json as json
 # Improvement: Sample from OpenAlex: choose any institution
 # Improvement: Sample from OpenAlex: only journal articles
 
-def load_data(doi_list, db_selection, my_email_address, opencitations_access_token):
+def load_data(doi_list, db_selection, my_email_address, opencitations_access_token, semanticscholar_api_key):
     if len(doi_list) == 0:
         st.warning('Please enter at least one valid DOI or generate a random sample of DOIs')
         return 'Failure', 0
@@ -42,7 +42,7 @@ def load_data(doi_list, db_selection, my_email_address, opencitations_access_tok
         step += 1
     if 'Semantic Scholar' in db_selection:
         with st.spinner(text=f"Step {step}/{len(db_selection)}: Loading Semantic Scholar data..."):
-            df = pd.concat([df, get_semanticscholar_counts(doi_list)])
+            df = pd.concat([df, get_semanticscholar_counts(doi_list, semanticscholar_api_key)])
         step += 1
     st.success('Counts successfully imported')
     return 'Success', df
@@ -224,26 +224,41 @@ def get_opencitations_meta_counts(dois, opencitations_access_token=''):
 
 
 @st.cache_data(show_spinner=False)
-def get_semanticscholar_counts(dois):
+def get_semanticscholar_counts(dois, semanticscholar_api_key=''):
     start_time = time.time()
+    headers = {"x-api-key": f"{semanticscholar_api_key}"}
     url = f"https://api.semanticscholar.org/graph/v1/paper/batch"
     params = {
         'fields': 'referenceCount,citationCount,authors,externalIds',
     }
+    dois = [('ARXIV:' + doi[15:]) if doi[:15] == '10.48550/arxiv.' else doi for doi in dois]
     data = json.dumps({"ids": dois})
-    r = requests.post(url, params=params, data=data)
+    r = requests.post(url, headers=headers, params=params, data=data)
     all_results = r.json()
-    if not str(all_results)[2:7] == 'error':
+    if not ((str(all_results)[2:7] == 'error') | (str(all_results)[2:9] == 'message')):
         all_results = [x for x in all_results if x is not None]
         df_counts = pd.DataFrame(all_results)
-        df_counts['doi'] = df_counts['externalIds'].apply(lambda x: x['DOI'].lower())
+        external_ids = df_counts['externalIds'].apply(pd.Series)
+        if 'DOI' in external_ids.columns:
+            if 'ArXiv' in external_ids.columns:
+                external_ids['ArXiv'] = '10.48550/arxiv.' + external_ids['ArXiv']
+                external_ids = external_ids['DOI'].fillna(external_ids['ArXiv'])
+            else:
+                external_ids = external_ids['DOI']
+        else: # 'ArXiv' in external_ids.columns
+            external_ids = '10.48550/arxiv.' + external_ids['ArXiv']
+        df_counts['doi'] = external_ids.apply(lambda x: x.lower())
         df_counts['authors'] = df_counts['authors'].apply(lambda x: len(x))
         df_counts = df_counts[['doi', 'citationCount', 'referenceCount', 'authors']]
         df_counts = df_counts.rename({'citationCount': 'citations',
                                       'referenceCount': 'references'}, axis=1)
         df_counts = pd.melt(df_counts, 'doi', var_name='count', value_name='value')
     else:
-        df_counts = pd.DataFrame()
+        if str(all_results)[2:9] == 'message':
+            st.write('Message from Semantic Scholar: "', all_results['message'], '"')
+            df_counts = pd.DataFrame()
+        else:
+            df_counts = pd.DataFrame()
     df_counts['database'] = 'Semantic Scholar'
     st.write(f'Semantic Scholar data loaded in %.2f seconds.' % (time.time() - start_time))
     return df_counts

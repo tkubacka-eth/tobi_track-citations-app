@@ -19,9 +19,8 @@ def get_random_institution(df0):
 def format_doi_list(doi_list):
     """Input: a list of DOIs. Output: same list of DOIs in short form without duplicates and in lower cases"""
     doi_list = [doi for doi in doi_list if ('10.' in doi)]  # Only keep elements which contain 10.
-    doi_list = [doi[doi.find('10.'):] for doi in doi_list]  # Short DOI format
+    doi_list = [doi[doi.find('10.'):].lower() for doi in doi_list]  # Short DOI format
     doi_list = list(dict.fromkeys(doi_list))  # remove duplicates
-    doi_list = [doi.lower() for doi in doi_list]
     return doi_list
 
 
@@ -256,10 +255,14 @@ with st.sidebar:
     with st.expander('Polite pool settings'):
         my_email_address = st.text_input("Email address for CrossRef and OpenAlex polite pool (optional)", '')
         opencitations_access_token = st.text_input("OpenCitations access token (optional)", '')
+        semanticscholar_api_key = st.text_input("Semantic Scholar API key (optional)", '')
 
     st.title('Load data')
     if st.button('Click to load data'):
-        load, df = api.load_data(dois, db_selection, my_email_address, opencitations_access_token)
+        load, df = api.load_data(dois, db_selection,
+                                 my_email_address,
+                                 opencitations_access_token,
+                                 semanticscholar_api_key)
         if load == 'Success':
             df, databases, df_pivoted = prepare_df(df, dois)
             if not df.empty:
