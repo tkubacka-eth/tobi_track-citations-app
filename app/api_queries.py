@@ -6,9 +6,6 @@ import time
 import json as json
 
 
-# Improvement: Sample from OpenAlex: only get sample with dois
-# Improvement: Sample from OpenAlex: choose any institution
-# Improvement: Sample from OpenAlex: only journal articles
 
 def load_data(doi_list, db_selection, my_email_address, opencitations_access_token, semanticscholar_api_key):
     if len(doi_list) == 0:
