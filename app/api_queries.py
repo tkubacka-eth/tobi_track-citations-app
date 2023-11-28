@@ -21,8 +21,8 @@ def load_data(doi_list, db_selection, my_email_address, opencitations_access_tok
 
     df = pd.DataFrame()
     step = 1
-    if 'CrossRef' in db_selection:
-        with st.spinner(text=f"Step {step}/{len(db_selection)}: Loading CrossRef data..."):
+    if 'Crossref' in db_selection:
+        with st.spinner(text=f"Step {step}/{len(db_selection)}: Loading Crossref data..."):
             df = pd.concat([df, get_crossref_counts(doi_list, my_email_address)])
         step += 1
     if 'OpenAlex' in db_selection:
@@ -92,8 +92,8 @@ def get_crossref_counts(dois, my_email_address):
         df_counts = pd.melt(df_counts, 'doi', var_name='count', value_name='value')
     else:
         pass
-    df_counts['database'] = 'CrossRef'
-    st.write(f'CrossRef data loaded in %.2f seconds.' % (time.time() - start_time))
+    df_counts['database'] = 'Crossref'
+    st.write(f'Crossref data loaded in %.2f seconds.' % (time.time() - start_time))
     return df_counts
 
 

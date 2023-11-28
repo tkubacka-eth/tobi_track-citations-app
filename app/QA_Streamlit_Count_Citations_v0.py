@@ -91,7 +91,7 @@ def generate_docs():
     st.header('Contact us')
     st.markdown('If you have any questions or feedback, please contact us through the [project page](https://eth-library.github.io/tobi/).')
     st.header('Documentation on the computation of the counts')
-    st.subheader('CrossRef')
+    st.subheader('Crossref')
     st.write('The *Citations count* corresponds to the *is-referenced-by-count* field.')
     st.write('The *References count* corresponds to the *references-count* field.')
     st.write('The *Authors count* is computed by getting the length of the *author* field.')
@@ -249,11 +249,11 @@ with st.sidebar:
     with st.expander('Data sources', expanded=True):
         db_selection = st.multiselect(
             "Select open data sources",
-            ['CrossRef', 'OpenAlex', 'OpenCitations Meta', 'OpenCitations COCI', 'Semantic Scholar'],
-            default=['CrossRef', 'OpenAlex', 'OpenCitations COCI', 'Semantic Scholar'])
+            ['Crossref', 'OpenAlex', 'OpenCitations Meta', 'OpenCitations COCI', 'Semantic Scholar'],
+            default=['Crossref', 'OpenAlex', 'OpenCitations COCI', 'Semantic Scholar'])
 
     with st.expander('Polite pool settings'):
-        my_email_address = st.text_input("Email address for CrossRef and OpenAlex polite pool (optional)", '')
+        my_email_address = st.text_input("Email address for Crossref and OpenAlex polite pool (optional)", '')
         opencitations_access_token = st.text_input("OpenCitations access token (optional)", '')
         semanticscholar_api_key = st.text_input("Semantic Scholar API key (optional)", '')
 
