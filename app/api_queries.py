@@ -29,13 +29,10 @@ def load_data(doi_list, db_selection, my_email_address, opencitations_access_tok
         with st.spinner(text=f"Step {step}/{len(db_selection)}: Loading OpenAlex data..."):
             df = pd.concat([df, get_openalex_counts(doi_list, my_email_address)])
         step += 1
-    if 'OpenCitations Meta' in db_selection:
-        with st.spinner(text=f"Step {step}/{len(db_selection)}: Loading OpenCitations Meta data..."):
+    if 'OpenCitations' in db_selection:
+        with st.spinner(text=f"Step {step}/{len(db_selection)}: Loading OpenCitations Index data..."):
+            df = pd.concat([df, get_opencitations_index_counts(doi_list, opencitations_access_token)])
             df = pd.concat([df, get_opencitations_meta_counts(doi_list, opencitations_access_token)])
-        step += 1
-    if 'OpenCitations COCI' in db_selection:
-        with st.spinner(text=f"Step {step}/{len(db_selection)}: Loading OpenCitations COCI data..."):
-            df = pd.concat([df, get_opencitations_coci_counts(doi_list, opencitations_access_token)])
         step += 1
     if 'Semantic Scholar' in db_selection:
         with st.spinner(text=f"Step {step}/{len(db_selection)}: Loading Semantic Scholar data..."):
@@ -134,64 +131,38 @@ def get_openalex_counts(dois, my_email_address=''):
 
 
 @st.cache_data(show_spinner=False)
-def get_opencitations_coci_missing_counts(dois, headers):
-    citations = []
-    references = []
-    for doi in dois:
-        url = f"https://opencitations.net/index/coci/api/v1/citation-count/{doi}"
-        r = requests.get(url, headers=headers)
-        count = r.json()[0]['count']
-        citations += [np.nan if int(count) == 0 else count]
-        url = f"https://opencitations.net/index/coci/api/v1/reference-count/{doi}"
-        r = requests.get(url, headers=headers)
-        count = r.json()[0]['count']
-        references += [np.nan if int(count) == 0 else count]
-    missing_counts = pd.DataFrame({"doi": dois,
-                                   "citations": citations,
-                                   "references": references})
-    return missing_counts
-
-
-@st.cache_data(show_spinner=False)
-def get_opencitations_coci_counts(dois, opencitations_access_token=''):
+def get_opencitations_index_counts(dois, opencitations_access_token=''):
     """Returns a df containing counts for citation, author and reference.
     In the case where there is no citation or reference,
     counts for those metadata are set to 0 when some metadata is associated to the doi,
     to nan where there is no metadata"""
     start_time = time.time()
     headers = {"authorization": f"{opencitations_access_token}"}
-    url = 'https://opencitations.net/index/coci/api/v1/metadata/' + '__'.join(dois)
-    r = requests.get(url, headers=headers)
-    results = r.json()
-    df_counts = pd.DataFrame()
-    if results:
-        df_counts = pd.DataFrame(results)[['author', 'citation_count', 'reference', 'doi']]
-        df_counts['author'] = df_counts['author'].apply(lambda x: x.count(';') + (len(x) != 0))
-        df_counts['reference'] = df_counts['reference'].apply(lambda x: x.count(';') + (len(x) != 0))
-        df_counts = df_counts.rename({'citation_count': 'citations',
-                                      'reference': 'references',
-                                      'author': 'authors'}, axis=1)
-    # st.write(f'*Metadata* query of OpenCitations COCI data loaded in %.2f seconds.' % (time.time() - start_time))
-    # start_time = time.time()
-    # It is also possible to extract a 'citations_count' from 'metadata',
-    # but it is not always defined (that is, 'metadata' does not exist whereas 'citation-count' exists)
-    if not df_counts.empty:
-        temp = [x for x in dois if x not in set(df_counts['doi'])]
-    else:
-        temp = dois
-    missing_counts = get_opencitations_coci_missing_counts(temp, headers=headers)
-    if not df_counts.empty:
-        df_counts = pd.concat([df_counts, missing_counts], ignore_index=True)
-        df_counts = pd.melt(df_counts, 'doi', var_name='count', value_name='value')
-        df_counts['database'] = 'OpenCitations COCI'
-    else:
-        df_counts = pd.DataFrame(missing_counts)
-        df_counts['authors'] = np.nan
-        df_counts = pd.melt(df_counts, 'doi', var_name='count', value_name='value')
-        df_counts['database'] = 'OpenCitations COCI'
-    # st.write(f'*Citation-count* and *reference-count* queries of OpenCitations COCI data '
-    #         f'loaded in %.2f seconds.' % (time.time() - start_time))
-    st.write(f'OpenCitations COCI data loaded in %.2f seconds.' % (time.time() - start_time))
+    citations = []
+    references = []
+    authors = []
+    for doi in dois:
+        url = 'https://opencitations.net/index/api/v2/citation-count/doi:' + doi
+        r = requests.get(url, headers=headers)
+        if r and len(r.json()) > 0:
+            citations += [int(r.json()[0]['count'])]
+        else:
+            citations += [np.nan]
+        url = 'https://opencitations.net/index/api/v2/reference-count/doi:' + doi
+        r = requests.get(url, headers=headers)
+        if r and len(r.json()) > 0:
+            references += [int(r.json()[0]['count'])]
+        else:
+            references += [np.nan]
+        authors += [np.nan]
+    df_counts = pd.DataFrame({"doi": dois,
+                              "citations": citations,
+                              "references": references})
+    df_counts = pd.melt(df_counts, 'doi', var_name='count', value_name='value')
+    df_counts['database'] = 'OpenCitations'
+    st.write(f'*Citation-count* and *reference-count* queries of OpenCitations Index data '
+             f'loaded in %.2f seconds.' % (time.time() - start_time))
+    # st.write(f'OpenCitations Index data loaded in %.2f seconds.' % (time.time() - start_time))
     return df_counts
 
 
@@ -213,7 +184,7 @@ def get_opencitations_meta_counts(dois, opencitations_access_token=''):
         df_counts = df_counts.rename({'id': 'doi',
                                       'author': 'authors'}, axis=1)
         df_counts = pd.melt(df_counts, 'doi', var_name='count', value_name='value')
-        df_counts['database'] = 'OpenCitations Meta'
+        df_counts['database'] = 'OpenCitations'
     else:
         df_counts = pd.DataFrame()
     st.write(f'*Metadata* query of OpenCitations Meta data loaded in %.2f seconds.' % (time.time() - start_time))

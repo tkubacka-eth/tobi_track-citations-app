@@ -99,21 +99,10 @@ def generate_docs():
     st.write('The *Citations count* corresponds to the *cited_by_count* field.')
     st.write('The *References count* is computed by getting the length of the *referenced_work* field.')
     st.write('The *Authors count* is computed by getting the length of the *authorships* field.')
-    st.subheader('OpenCitations COCI')
-    st.write('The *citations count*, *references count* and *authors count* are first retrieved using metadata:\
-    [https://opencitations.net/index/coci/api/v1/metadata/<DOI__DOI__DOI... DOI>](https://opencitations.net/index/coci/api/v1/metadata/)')
-    st.write('Note from [OpenCitations](https://opencitations.net/index/croci/api/v1): "This operation strictly depends on external services (i.e. doi.org and associate applications) \
-    for gathering all the metadata of the articles requested. \
-    In fact, these metadata are not stored in COCI and are retrieved dynamically upon request."')
-    st.write('The *Citations count* corresponds to the *citation_count* field.')
-    st.write('The *References count* is computed by adding 1 to the number of semicolons (";") in the *reference* field.')
-    st.write('The *Authors count* is computed by adding 1 to the number of semicolons (";") in the *author* field.')
-    st.write('In a second step, *citations count* and *references count* of DOIs which are not associated to metadata \
-    are retrieved using: \
-    [https://opencitations.net/index/coci/api/v1/citation-count/<doi>](https://opencitations.net/index/coci/api/v1/citation-count/) and \
-    [https://opencitations.net/index/coci/api/v1/reference-count/<doi>](https://opencitations.net/index/coci/api/v1/reference-count/). \
-    This method returns 0 by default. 0s retrieved during this step are replaced by *None*,\
-    whereas other 0s are kept as they are.')
+    st.subheader('OpenCitations')
+    st.write('The *Citations count* corresponds to the *citation-count* in the OpenCitations Index')
+    st.write('The *References count* corresponds to the *reference-count* in the OpenCitations Index')
+    st.write('The *Authors count* is computed by adding 1 to the number of semicolons (";") in the *author* field in OpenCitations Meta')
     st.subheader('Semantic Scholar')
     st.write('The *Citations count* corresponds to the *citationCount* field.')
     st.write('The *References count* corresponds to the *referenceCount* field.')
@@ -249,8 +238,8 @@ with st.sidebar:
     with st.expander('Data sources', expanded=True):
         db_selection = st.multiselect(
             "Select open data sources",
-            ['Crossref', 'OpenAlex', 'OpenCitations Meta', 'OpenCitations COCI', 'Semantic Scholar'],
-            default=['Crossref', 'OpenAlex', 'OpenCitations COCI', 'Semantic Scholar'])
+            ['Crossref', 'OpenAlex', 'OpenCitations', 'Semantic Scholar'],
+            default=['Crossref', 'OpenAlex', 'OpenCitations', 'Semantic Scholar'])
 
     with st.expander('Polite pool settings'):
         my_email_address = st.text_input("Email address for Crossref and OpenAlex polite pool (optional)", '')
