@@ -183,6 +183,11 @@ def get_opencitations_meta_counts(dois, opencitations_access_token=''):
         df_counts['id'] = df_counts['id'].apply(lambda x: x[4+x.find('doi:'):x.find(' ')])
         df_counts = df_counts.rename({'id': 'doi',
                                       'author': 'authors'}, axis=1)
+        if df_counts.duplicated(subset=['doi']).any():
+            d = set(df_counts[df_counts.duplicated(subset=['doi'])]['doi'])
+            d = ', '.join(d)
+            st.warning(f'Multiple authors counts for {d} in OpenCitations Meta. Only one count is computed.')
+            df_counts = df_counts.drop_duplicates(subset=['doi'], keep='first')
         df_counts = pd.melt(df_counts, 'doi', var_name='count', value_name='value')
         df_counts['database'] = 'OpenCitations'
     else:
