@@ -95,6 +95,10 @@ def generate_docs():
     st.write('The *Citations count* corresponds to the *is-referenced-by-count* field.')
     st.write('The *References count* corresponds to the *references-count* field.')
     st.write('The *Authors count* is computed by getting the length of the *author* field.')
+    st.subheader('OpenAIRE')
+    st.write('The *Citations count* corresponds to the score of *influence_alt* in the *measure* field.')
+    st.write('The *References count* is computed by getting the length of the *reference* field in *extraInfo*.')
+    st.write('The *Authors count* is computed by getting the number of unique ranks in the *creator* field.')
     st.subheader('OpenAlex')
     st.write('The *Citations count* corresponds to the *cited_by_count* field.')
     st.write('The *References count* is computed by getting the length of the *referenced_work* field.')
@@ -238,8 +242,8 @@ with st.sidebar:
     with st.expander('Data sources', expanded=True):
         db_selection = st.multiselect(
             "Select open data sources",
-            ['Crossref', 'OpenAlex', 'OpenCitations', 'Semantic Scholar'],
-            default=['Crossref', 'OpenAlex', 'OpenCitations', 'Semantic Scholar'])
+            ['Crossref', 'OpenAIRE', 'OpenAlex', 'OpenCitations', 'Semantic Scholar'],
+            default=['Crossref', 'OpenAIRE', 'OpenAlex', 'OpenCitations', 'Semantic Scholar'])
 
     with st.expander('Polite pool settings'):
         my_email_address = st.text_input("Email address for Crossref and OpenAlex polite pool (optional)", '')
@@ -276,8 +280,7 @@ st.write('''Wondering how your research is being represented in open bibliometri
          '''inspect a random sample of 10 DOIs affiliated with it.''')
 
 
-###### Check if data loaded 
-
+###### Check if data loaded
 if 'df' not in st.session_state:
     st.warning('No data found. Define your input in the sidebar and click on *Click to load data*.')
     st.stop()

@@ -38,6 +38,10 @@ def load_data(doi_list, db_selection, my_email_address, opencitations_access_tok
         with st.spinner(text=f"Step {step}/{len(db_selection)}: Loading Semantic Scholar data..."):
             df = pd.concat([df, get_semanticscholar_counts(doi_list, semanticscholar_api_key)])
         step += 1
+    if 'OpenAIRE' in db_selection:
+        with st.spinner(text=f"Step {step}/{len(db_selection)}: Loading OpenAIRE data..."):
+            df = pd.concat([df, get_openaire_counts(doi_list)])
+        step += 1
     st.success('Counts successfully imported')
     return 'Success', df
 
@@ -154,7 +158,6 @@ def get_opencitations_index_counts(dois, opencitations_access_token=''):
             references += [int(r.json()[0]['count'])]
         else:
             references += [np.nan]
-        authors += [np.nan]
     df_counts = pd.DataFrame({"doi": dois,
                               "citations": citations,
                               "references": references})
@@ -234,6 +237,71 @@ def get_semanticscholar_counts(dois, semanticscholar_api_key=''):
             df_counts = pd.DataFrame()
     df_counts['database'] = 'Semantic Scholar'
     st.write(f'Semantic Scholar data loaded in %.2f seconds.' % (time.time() - start_time))
+    return df_counts
+
+
+def get_openaire_dollar(dict_or_list):
+    if type(dict_or_list) is dict:
+        return dict_or_list['$']
+    else:
+        return dict_or_list[0]['$'] # takes only first of the list
+
+def get_openaire_dois_list(dict_or_list, dois):
+    if type(dict_or_list) is dict:
+        return [dict_or_list['$']]
+    else:
+        dois_list = [dict_or_list[i]['$'] for i in range(len(dict_or_list))]
+        dois_list = [x for x in dois_list if x in dois]
+        return dois_list
+
+
+@st.cache_data(show_spinner=False)
+def get_openaire_counts(dois):
+    start_time = time.time()
+    url = f"http://api.openaire.eu/search/researchProducts"
+    params = {'doi': dois,
+              'format': 'json'}
+    r = requests.get(url, params=params)
+    r.raise_for_status()
+    all_results = r.json()['response']['results']['result']
+
+    extracted_dois = []
+    authors = []
+    citations = []
+    references = []
+    for d in all_results:
+        oaf_entity = d['metadata']['oaf:entity']
+        oaf_result = d['metadata']['oaf:entity']['oaf:result']
+        current_dois_list = get_openaire_dois_list(oaf_result['pid'], dois)
+        l = len(current_dois_list)
+        extracted_dois += current_dois_list
+        if 'creator' in oaf_result:
+            if type(oaf_result['creator']) is dict:
+                authors += [1]*l
+            else:
+                ranks = set()
+                for c in oaf_result['creator']:
+                    ranks.add(c['@rank'])
+                authors += [len(ranks)]*l
+        else:
+            authors += [0]*l
+        m = oaf_result['measure']
+        citations += [next(int(m[i]['@score']) for i in range(len(m)) if m[i]['@id'] == 'influence_alt')]*l
+        if 'extraInfo' in oaf_entity:
+            if type(oaf_entity['extraInfo']) is dict:
+                references += [len(oaf_entity['extraInfo']['references']['reference'])]*l
+            else:
+                references += [len(oaf_entity['extraInfo'][0]['references']['reference'])]*l
+        else:
+            references += [np.nan]*l
+    df_counts = pd.DataFrame({
+        'doi': extracted_dois,
+        'authors': authors,
+        'citations': citations,
+        'references': references})
+    df_counts = pd.melt(df_counts, 'doi', var_name='count', value_name='value')
+    df_counts['database'] = 'OpenAIRE'
+    st.write(f'OpenAIRE data loaded in %.2f seconds.' % (time.time() - start_time))
     return df_counts
 
 
