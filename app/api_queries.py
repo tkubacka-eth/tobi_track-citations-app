@@ -179,8 +179,15 @@ def get_opencitations_meta_counts(dois, opencitations_access_token=''):
         url = f'https://opencitations.net/meta/api/v1/metadata/doi:{doi}'
         try:
             r = requests.get(url, headers=headers)
-            r.raise_for_status()
-            result = r.json()
+            try:
+                r.raise_for_status()
+                result = r.json()
+            except requests.exceptions.JSONDecodeError:
+                st.error(f"OpenCitations API returned non-JSON response: {r.text[:500]}")
+                return []
+            except requests.exceptions.HTTPError as e:
+                st.error(f"HTTP error: {e} – Response: {r.text[:500]}")
+                return []
 
             if not isinstance(result, list) or not result:
                 continue
