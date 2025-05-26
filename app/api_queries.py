@@ -171,31 +171,41 @@ def get_opencitations_index_counts(dois, opencitations_access_token=''):
 
 @st.cache_data(show_spinner=False)
 def get_opencitations_meta_counts(dois, opencitations_access_token=''):
-    """Returns a df containing counts for citation, author and reference.
-    In the case where there is no citation or reference,
-    counts for those metadata are set to 0 when some metadata is associated to the doi,
-    to nan where there is no metadata"""
     start_time = time.time()
     headers = {"authorization": f"{opencitations_access_token}"}
-    url = 'https://opencitations.net/meta/api/v1/metadata/' + '__'.join(['doi:'+doi for doi in dois])
-    r = requests.get(url, headers=headers)
-    results = r.json()
-    if len(results) > 0:
-        df_counts = pd.DataFrame(results)[['author', 'id']]
-        df_counts['author'] = df_counts['author'].apply(lambda x: x.count(';') + (len(x) != 0))
-        df_counts['id'] = df_counts['id'].apply(lambda x: x[4+x.find('doi:'):x.find(' ')])
-        df_counts = df_counts.rename({'id': 'doi',
-                                      'author': 'authors'}, axis=1)
-        if df_counts.duplicated(subset=['doi']).any():
-            d = set(df_counts[df_counts.duplicated(subset=['doi'])]['doi'])
-            d = ', '.join(d)
-            st.warning(f'Multiple authors counts for {d} in OpenCitations Meta. Only one count is computed.')
-            df_counts = df_counts.drop_duplicates(subset=['doi'], keep='first')
-        df_counts = pd.melt(df_counts, 'doi', var_name='count', value_name='value')
-        df_counts['database'] = 'OpenCitations'
-    else:
-        df_counts = pd.DataFrame()
-    st.write(f'*Metadata* query of OpenCitations Meta data loaded in %.2f seconds.' % (time.time() - start_time))
+    
+    records = []
+    
+    for doi in dois:
+        url = f'https://opencitations.net/meta/api/v1/metadata/doi:{doi}'
+        try:
+            r = requests.get(url, headers=headers)
+            r.raise_for_status()
+            result = r.json()
+
+            if not isinstance(result, list) or not result:
+                continue
+
+            metadata = result[0]  # assume first record is most relevant
+            record = {
+                'doi': doi,
+                'authors': metadata.get('author', '').count(';') + (1 if metadata.get('author', '') else 0)
+            }
+            records.append(record)
+
+        except requests.RequestException as e:
+            st.warning(f"Request error for DOI {doi}: {e}")
+        except Exception as e:
+            st.warning(f"Unexpected error for DOI {doi}: {e}")
+
+    if not records:
+        return pd.DataFrame()
+
+    df_counts = pd.DataFrame(records)
+    df_counts = pd.melt(df_counts, id_vars='doi', var_name='count', value_name='value')
+    df_counts['database'] = 'OpenCitations'
+
+    st.write(f'*Metadata* queries from OpenCitations Meta completed in %.2f seconds.' % (time.time() - start_time))
     return df_counts
 
 
