@@ -52,7 +52,7 @@ def prepare_df(df0, doi_list):
         return df, databases0, df0_pivoted
 
 
-def generate_tab(df0, count):
+def generate_tab(df0, count, databases):
     st.header(f'{count.capitalize()} count')
 
     cols = st.columns([4, 1], gap='large')
@@ -304,18 +304,18 @@ df_pivoted['CV'] = df_pivoted['sd']/df_pivoted['mean']
 
 ## define the tab content 
 tab_dict = {
-    "Citations count": lambda x: generate_tab(df_pivoted, 'citations'), 
-    "References count": lambda x: generate_tab(df_pivoted, 'references'),
-    "Authors count": lambda x: generate_tab(df_pivoted, 'authors'),
-    "Documentation": lambda x: generate_docs(), 
-    "Download data": lambda x: csv_download_button(),
+    "Citations count": lambda: generate_tab(df_pivoted, 'citations', databases), 
+    "References count": lambda: generate_tab(df_pivoted, 'references', databases),
+    "Authors count": lambda: generate_tab(df_pivoted, 'authors', databases),
+    "Documentation": generate_docs, 
+    "Download data": csv_download_button,
 }
 
 tabs = st.tabs(list(tab_dict.keys()))
 
 for t, kv in zip(tabs, tab_dict.items()):
     with t: 
-        kv[1](None)  # None in order to evaluate the lambda function
+        kv[1]()  
 
 
 #### Footer 
