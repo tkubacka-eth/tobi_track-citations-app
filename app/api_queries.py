@@ -273,7 +273,7 @@ def get_openaire_dois_list(dict_or_list, dois):
 @st.cache_data(show_spinner=False)
 def get_openaire_counts(dois):
     start_time = time.time()
-    base_url = "https://api.openaire.eu/graph/v1/researchProducts"
+    base_url = "https://api.openaire.eu/graph/v2/researchProducts"
     headers = {"Accept": "application/json"}
 
     all_records = []
@@ -287,14 +287,25 @@ def get_openaire_counts(dois):
             r = requests.get(base_url, params=params, headers=headers)
             r.raise_for_status()
             result = r.json()
-            if result:
-                record = result[0] if isinstance(result, list) else result
+
+            # Change: in API v2 the JSON structure has changed → records are inside "results", not directly in root
+            if result and "results" in result and len(result["results"]) > 0:
+                record = result["results"][0]
+
+                
+                author_count = len(record.get("authors", []))
+                citations = record.get("indicators", {}).get("citationImpact", {}).get("citationCount", None)
+                # Note: there is no direct "referenceCount" field in the JSON V2 response
+                references = None
+
+
                 all_records.append({
                     "doi": doi.lower(),
-                    "citations": record.get("citationCount"),
-                    "references": record.get("referenceCount"),
-                    "authors": record.get("authorCount")
+                    "citations": citations,
+                    "references": references,
+                    "authors": author_count
                 })
+
         except Exception as e:
             st.warning(f"OpenAIRE error for DOI {doi}: {e}")
 
